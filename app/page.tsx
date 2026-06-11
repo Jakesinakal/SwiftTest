@@ -1,65 +1,93 @@
 import Image from "next/image";
+import Link from "next/link";
+import { DURATION_SECONDS, QUESTION_COUNT } from "@/lib/questions";
+import { highlightSwift } from "@/lib/highlight";
+import CodeBlock from "@/components/CodeBlock";
 
-export default function Home() {
+const HERO_SNIPPET = `struct Quiz {
+    let topik: String
+    var skor = 0
+    var sisaWaktu = 20  // menit, jangan kebanyakan mikir ;)
+
+    mutating func jawab(benar: Bool) {
+        skor += benar ? 1 : 0
+        // salah? gpp, yang penting nyoba :)
+    }
+}
+
+var aku = Quiz(topik: "Optionals")
+aku.jawab(benar: true)
+
+guard aku.skor > 0 else {
+    fatalError("force unwrap ke nil, x_x")
+}
+
+print("Skor: \\(aku.skor) — gas terus, jangan nyerah!")`;
+
+export default async function Home() {
+  const heroCodeHtml = await highlightSwift(HERO_SNIPPET);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center px-4 py-16 sm:py-24">
+      <p className="text-sm font-semibold uppercase tracking-widest text-swift">
+        Latihan Dasar Swift
+      </p>
+
+      <h1 className="mt-6 flex flex-wrap items-center justify-center gap-3 text-center text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl dark:text-stone-50">
+        Tes Pengetahuan Swift
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
+          src="/swift-logo.png"
+          alt="Logo Swift"
+          width={56}
+          height={56}
+          className="h-11 w-11 rounded-2xl shadow-sm sm:h-14 sm:w-14"
           priority
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </h1>
+
+      <p className="mt-5 max-w-xl text-center text-lg text-stone-600 dark:text-stone-300">
+        Wadah berlatih untuk kamu yang sedang belajar dasar bahasa Swift. Kerjakan {QUESTION_COUNT}{" "}
+        soal pilihan ganda, lalu pelajari pembahasan lengkapnya.
+      </p>
+
+      <dl className="mt-8 flex items-center gap-4 text-sm text-stone-500 dark:text-stone-400">
+        <div className="flex items-baseline gap-1.5">
+          <dt className="text-xl font-bold text-stone-900 sm:text-2xl dark:text-stone-100">{QUESTION_COUNT}</dt>
+          <dd>soal</dd>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <span aria-hidden className="text-stone-300 dark:text-stone-700">
+          ·
+        </span>
+        <div className="flex items-baseline gap-1.5">
+          <dt className="text-xl font-bold text-stone-900 sm:text-2xl dark:text-stone-100">{DURATION_SECONDS / 60}</dt>
+          <dd>menit</dd>
         </div>
-      </main>
-    </div>
+        <span aria-hidden className="text-stone-300 dark:text-stone-700">
+          ·
+        </span>
+        <div className="flex items-baseline gap-1.5">
+          <dt className="text-xl font-bold text-stone-900 sm:text-2xl dark:text-stone-100">A–D</dt>
+          <dd>pilihan</dd>
+        </div>
+      </dl>
+
+      <Link
+        href="/test"
+        className="mt-10 rounded-xl bg-swift px-8 py-3.5 text-lg font-semibold text-white shadow-sm transition-colors hover:bg-swift-dark"
+      >
+        Mulai Tes Sekarang
+      </Link>
+
+      {/* Cuplikan kode */}
+      <div className="mt-16 w-full min-w-0 max-w-2xl overflow-hidden rounded-xl shadow-lg ring-1 ring-stone-900/10 dark:ring-stone-100/10">
+        <div className="flex items-center gap-1.5 bg-[#0d1117] px-4 py-2.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
+          <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/60" />
+          <span className="h-2.5 w-2.5 rounded-full bg-green-500/60" />
+          <span className="ml-2 font-mono text-xs text-stone-400">Quiz.swift</span>
+        </div>
+        <CodeBlock html={heroCodeHtml} className="[&_pre]:!m-0" />
+      </div>
+    </main>
   );
 }
