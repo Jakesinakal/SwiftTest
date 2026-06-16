@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import { questions } from "@/lib/questions";
 import { highlightSwift } from "@/lib/highlight";
 import { type PreparedQuestion } from "@/lib/session";
@@ -9,6 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default async function TestPage() {
+  "use cache";
+  cacheLife("max"); // Soal statis — hanya berubah saat deploy.
+
   // Highlight semua snippet kode di server (dijalankan sekali saat build).
   const prepared: PreparedQuestion[] = await Promise.all(
     questions.map(async (q) => ({

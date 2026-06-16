@@ -1,13 +1,19 @@
-import { createHighlighter, type Highlighter } from "shiki";
+import { createHighlighterCore, type HighlighterCore } from "shiki/core";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import swift from "@shikijs/langs/swift";
+import githubDark from "@shikijs/themes/github-dark";
 
+// Hanya grammar Swift + tema github-dark yang dimuat (bukan bundle penuh Shiki),
+// dengan engine regex JavaScript sehingga tidak perlu memuat WASM oniguruma.
 // Highlighter dibuat sekali lalu dipakai ulang untuk semua snippet (lebih hemat).
-let highlighterPromise: Promise<Highlighter> | null = null;
+let highlighterPromise: Promise<HighlighterCore> | null = null;
 
 function getHighlighter() {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: ["github-dark"],
-      langs: ["swift"],
+    highlighterPromise = createHighlighterCore({
+      themes: [githubDark],
+      langs: [swift],
+      engine: createJavaScriptRegexEngine(),
     });
   }
   return highlighterPromise;

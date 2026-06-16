@@ -13,7 +13,7 @@ export type Question = {
 };
 
 export const QUESTION_COUNT = 25;
-export const DURATION_SECONDS = 30 * 60;
+export const DURATION_SECONDS = 20 * 60;
 
 export const questions: Question[] = [
   {

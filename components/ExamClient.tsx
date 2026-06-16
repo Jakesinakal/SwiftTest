@@ -25,6 +25,11 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
   const answeredCount = answers.filter((a) => a !== null).length;
   const usedSeconds = DURATION_SECONDS - timeLeft;
 
+  // Waktu habis -> otomatis selesai. Diturunkan saat render (bukan lewat effect)
+  // agar tidak memicu render berantai.
+  const effectiveStatus: Status =
+    status === "running" && timeLeft === 0 ? "finished" : status;
+
   const start = useCallback(() => {
     setSession(buildSession(questions));
     setAnswers(Array(questions.length).fill(null));
@@ -47,25 +52,20 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
 
   // Hitung mundur saat tes berjalan.
   useEffect(() => {
-    if (status !== "running") return;
+    if (effectiveStatus !== "running") return;
     const id = setInterval(() => {
       setTimeLeft((t) => Math.max(0, t - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, [status]);
-
-  // Waktu habis -> otomatis submit.
-  useEffect(() => {
-    if (status === "running" && timeLeft === 0) finish();
-  }, [status, timeLeft, finish]);
+  }, [effectiveStatus]);
 
   // Cegah peserta tidak sengaja menutup / reload halaman saat tes berjalan.
   useEffect(() => {
-    if (status !== "running") return;
+    if (effectiveStatus !== "running") return;
     const handler = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [status]);
+  }, [effectiveStatus]);
 
   const choose = (optionIndex: number) => {
     setAnswers((prev) => {
@@ -75,9 +75,9 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
     });
   };
 
-  if (status === "idle") return <StartScreen onStart={start} />;
+  if (effectiveStatus === "idle") return <StartScreen onStart={start} />;
 
-  if (status === "finished") {
+  if (effectiveStatus === "finished") {
     return (
       <ExamResults
         session={session}

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { cacheLife } from "next/cache";
 import { DURATION_SECONDS, QUESTION_COUNT } from "@/lib/questions";
 import { highlightSwift } from "@/lib/highlight";
 import CodeBlock from "@/components/CodeBlock";
@@ -25,6 +26,9 @@ guard aku.skor > 0 else {
 print("Skor: \\(aku.skor) — gas terus, jangan nyerah!")`;
 
 export default async function Home() {
+  "use cache";
+  cacheLife("max"); // Konten statis — hanya berubah saat deploy.
+
   const heroCodeHtml = await highlightSwift(HERO_SNIPPET);
 
   return (
