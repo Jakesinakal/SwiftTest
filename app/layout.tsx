@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { QUESTION_COUNT } from "@/lib/questions";
+import { TOTAL_DRAW } from "@/lib/questions";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tes Dasar Swift — Latihan Soal Pemrograman Swift",
-  description: `Uji pemahamanmu tentang dasar bahasa Swift lewat ${QUESTION_COUNT} soal pilihan ganda dengan timer dan pembahasan lengkap.`,
+  title: "Tes Logika & Dasar Pemrograman",
+  description: `Latihan kemampuan logika dan dasar pemrograman lewat ${TOTAL_DRAW} soal pilihan ganda dengan timer dan pembahasan lengkap.`,
 };
 
 export default function RootLayout({

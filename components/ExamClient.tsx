@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { DURATION_SECONDS, QUESTION_COUNT } from "@/lib/questions";
+import { DURATION_SECONDS, TOTAL_DRAW } from "@/lib/questions";
 import {
   buildSession,
-  type PreparedQuestion,
+  type PreparedSection,
   type SessionQuestion,
 } from "@/lib/session";
 import CodeBlock from "./CodeBlock";
@@ -14,7 +14,23 @@ import ExamResults from "./ExamResults";
 
 type Status = "idle" | "running" | "finished";
 
-export default function ExamClient({ questions }: { questions: PreparedQuestion[] }) {
+/** Kelompok soal berurutan per section, lengkap dengan index globalnya. */
+type NavGroup = { sectionId: string; sectionName: string; start: number; count: number };
+
+function groupBySection(session: SessionQuestion[]): NavGroup[] {
+  const groups: NavGroup[] = [];
+  session.forEach((q, i) => {
+    const last = groups[groups.length - 1];
+    if (last && last.sectionId === q.sectionId) {
+      last.count++;
+    } else {
+      groups.push({ sectionId: q.sectionId, sectionName: q.sectionName, start: i, count: 1 });
+    }
+  });
+  return groups;
+}
+
+export default function ExamClient({ sections }: { sections: PreparedSection[] }) {
   const [status, setStatus] = useState<Status>("idle");
   const [session, setSession] = useState<SessionQuestion[]>([]);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
@@ -31,12 +47,13 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
     status === "running" && timeLeft === 0 ? "finished" : status;
 
   const start = useCallback(() => {
-    setSession(buildSession(questions));
-    setAnswers(Array(questions.length).fill(null));
+    const s = buildSession(sections);
+    setSession(s);
+    setAnswers(Array(s.length).fill(null));
     setCurrent(0);
     setTimeLeft(DURATION_SECONDS);
     setStatus("running");
-  }, [questions]);
+  }, [sections]);
 
   const finish = useCallback(() => setStatus("finished"), []);
 
@@ -75,7 +92,7 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
     });
   };
 
-  if (effectiveStatus === "idle") return <StartScreen onStart={start} />;
+  if (effectiveStatus === "idle") return <StartScreen sections={sections} onStart={start} />;
 
   if (effectiveStatus === "finished") {
     return (
@@ -91,19 +108,25 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
   // status === "running"
   const q = session[current];
   const selected = answers[current];
+  const navGroups = groupBySection(session);
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Header lengket: timer + progres */}
+      {/* Header lengket: section + timer + progres */}
       <header className="sticky top-0 z-10 border-b border-stone-200 bg-stone-50/90 backdrop-blur dark:border-stone-800 dark:bg-stone-950/90">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
-          <div className="text-sm font-medium text-stone-600 dark:text-stone-300">
-            Soal{" "}
-            <span className="font-bold text-stone-900 dark:text-stone-50">{current + 1}</span> /{" "}
-            {total}
-            <span className="ml-2 hidden text-stone-400 sm:inline">
-              · {answeredCount} terjawab
-            </span>
+          <div className="min-w-0">
+            <div className="truncate text-xs font-semibold uppercase tracking-wide text-swift">
+              {q.sectionName}
+            </div>
+            <div className="text-sm font-medium text-stone-600 dark:text-stone-300">
+              Soal{" "}
+              <span className="font-bold text-stone-900 dark:text-stone-50">{current + 1}</span> /{" "}
+              {total}
+              <span className="ml-2 hidden text-stone-400 sm:inline">
+                · {answeredCount} terjawab
+              </span>
+            </div>
           </div>
           <Timer seconds={timeLeft} />
         </div>
@@ -156,31 +179,41 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
         </ul>
       </main>
 
-      {/* Navigator soal */}
+      {/* Navigator soal, dikelompokkan per section */}
       <footer className="border-t border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
         <div className="mx-auto w-full max-w-3xl px-4 py-4">
-          <div className="mb-4 flex flex-wrap gap-2">
-            {session.map((_, i) => {
-              const isCurrent = i === current;
-              const isAnswered = answers[i] !== null;
-              return (
-                <button
-                  key={i}
-                  onClick={() => setCurrent(i)}
-                  aria-label={`Ke soal ${i + 1}`}
-                  className={[
-                    "h-9 w-9 rounded-lg text-sm font-semibold tabular-nums transition-colors",
-                    isCurrent
-                      ? "bg-swift text-white ring-2 ring-swift ring-offset-2 ring-offset-white dark:ring-offset-stone-900"
-                      : isAnswered
-                        ? "bg-swift/15 text-swift dark:bg-swift/20"
-                        : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700",
-                  ].join(" ")}
-                >
-                  {i + 1}
-                </button>
-              );
-            })}
+          <div className="mb-4 space-y-3">
+            {navGroups.map((g) => (
+              <div key={g.sectionId}>
+                <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                  {g.sectionName}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: g.count }, (_, k) => {
+                    const i = g.start + k;
+                    const isCurrent = i === current;
+                    const isAnswered = answers[i] !== null;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setCurrent(i)}
+                        aria-label={`Ke soal ${i + 1}`}
+                        className={[
+                          "h-9 w-9 rounded-lg text-sm font-semibold tabular-nums transition-colors",
+                          isCurrent
+                            ? "bg-swift text-white ring-2 ring-swift ring-offset-2 ring-offset-white dark:ring-offset-stone-900"
+                            : isAnswered
+                              ? "bg-swift/15 text-swift dark:bg-swift/20"
+                              : "bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700",
+                        ].join(" ")}
+                      >
+                        {i + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="flex items-center justify-between gap-3">
@@ -214,22 +247,35 @@ export default function ExamClient({ questions }: { questions: PreparedQuestion[
   );
 }
 
-function StartScreen({ onStart }: { onStart: () => void }) {
+function StartScreen({
+  sections,
+  onStart,
+}: {
+  sections: PreparedSection[];
+  onStart: () => void;
+}) {
+  const hours = DURATION_SECONDS / 3600;
   return (
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center px-4 py-16 text-center">
       <div className="rounded-2xl border border-stone-200 bg-white p-8 shadow-sm dark:border-stone-800 dark:bg-stone-900">
         <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Siap memulai tes?</h1>
         <p className="mt-3 text-stone-600 dark:text-stone-300">
-          Uji pemahamanmu tentang dasar bahasa Swift. Baca tiap soal dengan teliti.
+          Uji kemampuan logika & dasar pemrogramanmu. Baca tiap soal dengan teliti.
         </p>
 
         <ul className="mt-6 space-y-3 text-left">
           <Rule>
-            <strong>{QUESTION_COUNT} soal</strong> pilihan ganda (A–D)
+            <strong>{TOTAL_DRAW} soal</strong> pilihan ganda (A–D) dalam {sections.length} bagian:
           </Rule>
+          {sections.map((s) => (
+            <Rule key={s.id}>
+              {s.name} — <strong>{s.drawCount} soal</strong>
+            </Rule>
+          ))}
           <Rule>
-            Batas waktu <strong>{DURATION_SECONDS / 60} menit</strong> — habis waktu otomatis dikumpulkan
+            Batas waktu <strong>{hours} jam</strong> — habis waktu otomatis dikumpulkan
           </Rule>
+          <Rule>Soal berbahasa Inggris</Rule>
           <Rule>Bisa maju-mundur dan mengubah jawaban sebelum selesai</Rule>
           <Rule>Kunci jawaban & pembahasan muncul setelah tes selesai</Rule>
         </ul>
